@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DCS Theater Engine</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="side-panel" aria-label="Theater details">
+        <header class="brand">
+          <div>
+            <p class="eyebrow">Theater</p>
+            <h1 id="theaterName">Marianas</h1>
+          </div>
+          <span class="status-dot" aria-hidden="true"></span>
+        </header>
+
+        <section class="metric-row" aria-label="Map summary">
+          <div>
+            <span id="airbaseCount">0</span>
+            <small>Airbases</small>
+          </div>
+          <div>
+            <span id="islandCount">0</span>
+            <small>Islands</small>
+          </div>
+        </section>
+
+        <section class="selection" aria-live="polite">
+          <p class="eyebrow">Selected</p>
+          <h2 id="selectedName">None</h2>
+          <dl>
+            <div>
+              <dt>Type</dt>
+              <dd id="selectedType">-</dd>
+            </div>
+            <div>
+              <dt>Runways</dt>
+              <dd id="selectedRunways">-</dd>
+            </div>
+            <div>
+              <dt>Parking</dt>
+              <dd id="selectedParking">-</dd>
+            </div>
+            <div>
+              <dt>Position</dt>
+              <dd id="selectedPosition">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section>
+          <div class="section-heading">
+            <p class="eyebrow">Airfields</p>
+          </div>
+          <div id="airbaseList" class="airbase-list"></div>
+        </section>
+      </aside>
+
+      <section class="map-stage" aria-label="Marianas map">
+        <div class="map-toolbar" aria-label="Map controls">
+          <button id="zoomIn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+          <button id="zoomOut" type="button" title="Zoom out" aria-label="Zoom out">-</button>
+          <button id="fitMap" type="button" title="Fit map" aria-label="Fit map">Fit</button>
+        </div>
+
+        <div
+          id="mapCanvas"
+          class="map-canvas"
+          role="application"
+          aria-label="Marianas theater map"
+        ></div>
+
+        <output id="coordinateReadout" class="coordinate-readout">Lat/lon</output>
+      </section>
+    </main>
+  </body>
+</html>
