@@ -34,10 +34,22 @@
           </div>
         </section>
 
+        <section class="runtime-panel" aria-label="Campaign clock">
+          <div>
+            <p class="eyebrow">Campaign Time</p>
+            <output id="campaignClock" class="campaign-clock">--:--:--</output>
+          </div>
+          <div id="timeScaleControls" class="time-scale-controls" aria-label="Time acceleration"></div>
+        </section>
+
         <section class="selection" aria-live="polite">
           <p class="eyebrow">Selected</p>
           <h2 id="selectedName">None</h2>
           <dl>
+            <div>
+              <dt>Side</dt>
+              <dd id="selectedCoalition">-</dd>
+            </div>
             <div>
               <dt>Type</dt>
               <dd id="selectedType">-</dd>
@@ -49,6 +61,10 @@
             <div>
               <dt>Parking</dt>
               <dd id="selectedParking">-</dd>
+            </div>
+            <div>
+              <dt>Damage</dt>
+              <dd id="selectedDamage">-</dd>
             </div>
             <div>
               <dt>Position</dt>

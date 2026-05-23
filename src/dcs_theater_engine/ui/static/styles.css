@@ -125,9 +125,42 @@ button:focus-visible {
   margin-top: 7px;
 }
 
-.selection {
+.runtime-panel {
+  display: grid;
+  gap: 12px;
   border-block: 1px solid var(--line);
-  padding-block: 20px;
+  padding-block: 18px;
+}
+
+.campaign-clock {
+  display: block;
+  margin-top: 5px;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 1.1rem;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.time-scale-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.time-scale-controls button {
+  min-width: 0;
+  padding-inline: 8px;
+}
+
+.time-scale-controls button[aria-pressed="true"] {
+  border-color: var(--focus);
+  background: rgba(136, 213, 197, 0.16);
+  color: var(--text);
+}
+
+.selection {
+  padding-bottom: 20px;
 }
 
 .selection dl {

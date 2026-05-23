@@ -14,6 +14,7 @@ class EventType(StrEnum):
 
     CAMPAIGN_CREATED = "campaign_created"
     TIME_ADVANCED = "time_advanced"
+    TIME_SCALE_CHANGED = "time_scale_changed"
     MISSION_PLANNED = "mission_planned"
     MISSION_LAUNCHED = "mission_launched"
     MISSION_COMPLETED = "mission_completed"
@@ -33,4 +34,3 @@ class CampaignEvent:
     payload: dict[str, Any] = field(default_factory=dict)
     id: str = field(default_factory=lambda: str(uuid4()))
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-

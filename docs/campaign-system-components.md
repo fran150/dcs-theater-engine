@@ -24,6 +24,12 @@ The system should support a full loop:
   possible.
 - Campaign simulation should continue outside DCS, even when no player mission
   is being flown.
+- Campaign simulation should use coarse campaign steps, scheduled events, and
+  statistical resolution rather than frame-rate or second-precision execution.
+- Wall-clock time is pacing only; campaign correctness should not depend on the
+  engine matching real elapsed seconds exactly.
+- UI refresh cadence should follow published campaign updates or slow polling,
+  not drive the simulation clock.
 - The first implementation should be simple but built around extensible
   boundaries.
 
@@ -138,6 +144,14 @@ Responsibilities:
 - Apply losses, damage, repairs, fuel usage, supply changes, and mission
   outcomes.
 - Emit campaign events for the UI and save history.
+- Resolve abstract engagements from current conditions and probabilities rather
+  than simulating every second of combat.
+
+Example:
+
+- A BVR encounter can evaluate aircraft, fuel, loadout, sensors, readiness,
+  position, support, doctrine, and intelligence, then roll against computed win
+  probabilities for each side.
 
 Phase 1 scope:
 

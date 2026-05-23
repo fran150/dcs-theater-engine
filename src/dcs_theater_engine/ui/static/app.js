@@ -1,18 +1,27 @@
 const state = {
   mapData: null,
+  runtime: null,
   leafletMap: null,
   airbaseMarkers: new Map(),
   selectedAirbaseId: null,
+  runtimePollId: null,
 };
+
+// Poll slowly because the engine advances in coarse campaign steps.
+const RUNTIME_POLL_INTERVAL_MS = 2000;
 
 const elements = {
   theaterName: document.querySelector("#theaterName"),
   airbaseCount: document.querySelector("#airbaseCount"),
   islandCount: document.querySelector("#islandCount"),
+  campaignClock: document.querySelector("#campaignClock"),
+  timeScaleControls: document.querySelector("#timeScaleControls"),
   selectedName: document.querySelector("#selectedName"),
+  selectedCoalition: document.querySelector("#selectedCoalition"),
   selectedType: document.querySelector("#selectedType"),
   selectedRunways: document.querySelector("#selectedRunways"),
   selectedParking: document.querySelector("#selectedParking"),
+  selectedDamage: document.querySelector("#selectedDamage"),
   selectedPosition: document.querySelector("#selectedPosition"),
   airbaseList: document.querySelector("#airbaseList"),
   coordinateReadout: document.querySelector("#coordinateReadout"),
@@ -53,6 +62,42 @@ function runwayText(airbase) {
 
 function airbaseById(airbaseId) {
   return state.mapData.airbases.find((airbase) => airbase.id === airbaseId);
+}
+
+function runtimeAirbaseByDefinitionId(definitionId) {
+  return state.runtime?.airbases.find((airbase) => airbase.definition_id === definitionId);
+}
+
+function formatCoalition(coalition) {
+  if (!coalition) {
+    return "-";
+  }
+  return coalition.charAt(0).toUpperCase() + coalition.slice(1);
+}
+
+function formatDamage(value) {
+  if (typeof value !== "number") {
+    return "-";
+  }
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatCampaignTime(value) {
+  if (!value) {
+    return "--:--:--";
+  }
+
+  const date = new Date(value);
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+    timeZoneName: "short",
+  }).format(date);
 }
 
 function fitMap() {
@@ -138,18 +183,23 @@ function selectAirbase(airbaseId, options = { pan: false }) {
 
   if (!airbase) {
     elements.selectedName.textContent = "None";
+    elements.selectedCoalition.textContent = "-";
     elements.selectedType.textContent = "-";
     elements.selectedRunways.textContent = "-";
     elements.selectedParking.textContent = "-";
+    elements.selectedDamage.textContent = "-";
     elements.selectedPosition.textContent = "-";
     return;
   }
 
+  const runtimeAirbase = runtimeAirbaseByDefinitionId(airbase.id);
   elements.selectedName.textContent = airbase.name;
+  elements.selectedCoalition.textContent = formatCoalition(runtimeAirbase?.coalition);
   elements.selectedType.textContent =
     airbase.category.charAt(0).toUpperCase() + airbase.category.slice(1);
   elements.selectedRunways.textContent = runwayText(airbase);
   elements.selectedParking.textContent = `${airbase.parking_slots}`;
+  elements.selectedDamage.textContent = formatDamage(runtimeAirbase?.runway_damage);
   elements.selectedPosition.textContent = formatLatLon(airbase);
 
   if (options.pan) {
@@ -185,6 +235,62 @@ function initLeafletMap() {
   elements.fitMap.addEventListener("click", fitMap);
 }
 
+function renderTimeScaleControls() {
+  clearNode(elements.timeScaleControls);
+
+  [1, 2, 4, 16, 32, 64].forEach((timeScale) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = `${timeScale}x`;
+    button.dataset.timeScale = String(timeScale);
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => setTimeScale(timeScale));
+    elements.timeScaleControls.appendChild(button);
+  });
+}
+
+function renderRuntime() {
+  if (!state.runtime) {
+    return;
+  }
+
+  elements.campaignClock.textContent = formatCampaignTime(state.runtime.campaign_time);
+  document.querySelectorAll("[data-time-scale]").forEach((button) => {
+    button.setAttribute(
+      "aria-pressed",
+      String(Number(button.dataset.timeScale) === state.runtime.time_scale),
+    );
+  });
+
+  if (state.selectedAirbaseId) {
+    selectAirbase(state.selectedAirbaseId);
+  }
+}
+
+async function loadRuntime() {
+  const response = await fetch("/api/campaign/runtime");
+  if (!response.ok) {
+    throw new Error(`Runtime request failed: ${response.status}`);
+  }
+
+  state.runtime = await response.json();
+  renderRuntime();
+}
+
+async function setTimeScale(timeScale) {
+  const response = await fetch("/api/campaign/runtime/time-scale", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ time_scale: timeScale }),
+  });
+  if (!response.ok) {
+    throw new Error(`Time scale request failed: ${response.status}`);
+  }
+
+  state.runtime = await response.json();
+  renderRuntime();
+}
+
 function renderMap() {
   elements.theaterName.textContent = state.mapData.name;
   elements.airbaseCount.textContent = state.mapData.airbases.length;
@@ -193,6 +299,7 @@ function renderMap() {
   initLeafletMap();
   state.mapData.airbases.forEach(createAirbaseMarker);
   renderAirbaseList();
+  renderTimeScaleControls();
   fitMap();
   selectAirbase("andersen-afb");
 }
@@ -207,7 +314,16 @@ async function loadMap() {
   renderMap();
 }
 
-loadMap().catch((error) => {
+async function init() {
+  await Promise.all([loadMap(), loadRuntime()]);
+  state.runtimePollId = window.setInterval(() => {
+    loadRuntime().catch((error) => {
+      elements.coordinateReadout.textContent = error.message;
+    });
+  }, RUNTIME_POLL_INTERVAL_MS);
+}
+
+init().catch((error) => {
   elements.theaterName.textContent = "Map unavailable";
   elements.coordinateReadout.textContent = error.message;
 });
