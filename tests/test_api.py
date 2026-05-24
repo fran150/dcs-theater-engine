@@ -4,7 +4,11 @@ import asyncio
 import json
 from typing import Any
 
+import pytest
+
 from dcs_theater_engine.api.app import create_app
+from dcs_theater_engine.data.coordinates import DcsPoint
+from dcs_theater_engine.data.marianas import MARIANAS_PROJECTION
 
 
 def request_json(
@@ -72,9 +76,24 @@ def test_marianas_map_payload_is_served() -> None:
     assert payload["id"] == "marianas"
     assert payload["name"] == "Mariana Islands"
     assert len(payload["airbases"]) == 8
+    assert payload["bounds"]["xMin"] == -300000
+    assert payload["bounds"]["xMax"] == 1000000
+    assert len(payload["bounds"]["outline"]) > 4
     assert any(
         airbase["name"] == "Andersen AFB" for airbase in payload["airbases"]
     )
+
+
+def test_marianas_projection_derives_wgs84_from_dcs_points() -> None:
+    point = DcsPoint(x=10574.989746, y=14548.833496)
+
+    lat_lon = MARIANAS_PROJECTION.to_lat_lon(point)
+    round_trip = MARIANAS_PROJECTION.to_dcs_point(lat_lon)
+
+    assert lat_lon.latitude == pytest.approx(13.58170286)
+    assert lat_lon.longitude == pytest.approx(144.93105130)
+    assert round_trip.x == pytest.approx(point.x)
+    assert round_trip.y == pytest.approx(point.y)
 
 
 def test_index_serves_map_ui() -> None:

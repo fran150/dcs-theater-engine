@@ -41,6 +41,11 @@ function airbaseLatLng(airbase) {
   return [airbase.latitude, airbase.longitude];
 }
 
+function mapBoundsLatLngs() {
+  const points = state.mapData.bounds?.outline ?? state.mapData.bounds?.corners ?? [];
+  return points.map((point) => [point.latitude, point.longitude]);
+}
+
 function formatLatLon(airbase) {
   const ns = airbase.latitude >= 0 ? "N" : "S";
   const ew = airbase.longitude >= 0 ? "E" : "W";
@@ -101,7 +106,11 @@ function formatCampaignTime(value) {
 }
 
 function fitMap() {
-  const latLngs = state.mapData.airbases.map(airbaseLatLng);
+  const latLngs = mapBoundsLatLngs();
+  if (!latLngs.length) {
+    latLngs.push(...state.mapData.airbases.map(airbaseLatLng));
+  }
+
   state.leafletMap.fitBounds(L.latLngBounds(latLngs), {
     padding: [64, 64],
     maxZoom: 9,
@@ -144,6 +153,22 @@ function createAirbaseMarker(airbase) {
   );
 
   state.airbaseMarkers.set(airbase.id, marker);
+}
+
+function createMapBoundsOverlay() {
+  const latLngs = mapBoundsLatLngs();
+  if (!latLngs.length) {
+    return;
+  }
+
+  L.polygon(latLngs, {
+    className: "map-limit-boundary",
+    color: "#ff2f2f",
+    fill: false,
+    interactive: false,
+    opacity: 0.95,
+    weight: 3,
+  }).addTo(state.leafletMap);
 }
 
 function renderAirbaseList() {
@@ -297,6 +322,7 @@ function renderMap() {
   elements.islandCount.textContent = state.mapData.islands.length;
 
   initLeafletMap();
+  createMapBoundsOverlay();
   state.mapData.airbases.forEach(createAirbaseMarker);
   renderAirbaseList();
   renderTimeScaleControls();

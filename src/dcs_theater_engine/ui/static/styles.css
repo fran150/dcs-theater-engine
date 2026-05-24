@@ -276,6 +276,10 @@ button:focus-visible {
   font-size: 11px;
 }
 
+.map-limit-boundary {
+  filter: drop-shadow(0 0 3px rgba(255, 47, 47, 0.7));
+}
+
 .airbase-div-icon {
   background: transparent;
   border: 0;

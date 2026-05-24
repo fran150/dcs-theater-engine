@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from dcs_theater_engine.data.coordinates import DcsPoint
+
 
 @dataclass(frozen=True, slots=True)
 class AircraftTypeDefinition:
@@ -20,8 +22,7 @@ class AirbaseDefinition:
 
     id: str
     name: str
-    latitude: float
-    longitude: float
+    position: DcsPoint
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,9 +36,8 @@ class TheaterDefinition:
     id: str
     name: str
     airbases: tuple[AirbaseDefinition, ...] = ()
-    land_polygons: tuple[tuple[tuple[float, float], ...], ...] = ()
-    sea_polygons: tuple[tuple[tuple[float, float], ...], ...] = ()
-    named_routes: dict[str, tuple[tuple[float, float], ...]] = field(
+    land_polygons: tuple[tuple[DcsPoint, ...], ...] = ()
+    sea_polygons: tuple[tuple[DcsPoint, ...], ...] = ()
+    named_routes: dict[str, tuple[DcsPoint, ...]] = field(
         default_factory=dict
     )
-
