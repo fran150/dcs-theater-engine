@@ -1,25 +1,26 @@
 """Marianas theater map data.
 
-Positions are stored in DCS world coordinates, in meters. The airfield data and
-projection parameters are a small pydcs MarianaIslands snapshot so the UI can
-start without importing pydcs on non-Windows development machines.
+Positions are stored in DCS world coordinates, in meters. Airport data comes
+from pydcs so DCS-owned terrain details stay aligned with the simulator data.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from dcs_theater_engine.data.coordinates import DcsPoint, TransverseMercatorProjection
+from dcs.terrain.marianaislands import MarianaIslands
+from dcs.terrain.marianaislands.projection import PARAMETERS as MARIANAS_PARAMETERS
+
+from dcs_theater_engine.data.coordinates import DcsPoint
 from dcs_theater_engine.data.definitions import AirbaseDefinition, TheaterDefinition
+from dcs_theater_engine.data.pydcs_adapter import (
+    airbases_from_pydcs,
+    projection_from_pydcs,
+)
 
 MapPolygon = tuple[DcsPoint, ...]
 
-MARIANAS_PROJECTION = TransverseMercatorProjection(
-    central_meridian=147,
-    false_easting=238417.99999989968,
-    false_northing=-1491840.000000048,
-    scale_factor=0.9996,
-)
+MARIANAS_PROJECTION = projection_from_pydcs(MARIANAS_PARAMETERS)
 
 
 def dcs_polygon(points: tuple[tuple[float, float], ...]) -> MapPolygon:
@@ -27,78 +28,14 @@ def dcs_polygon(points: tuple[tuple[float, float], ...]) -> MapPolygon:
 
     return tuple(DcsPoint(x=x, y=y) for x, y in points)
 
-MARIANAS_AIRBASES: tuple[dict[str, Any], ...] = (
-    {
-        "id": "rota-intl",
-        "name": "Rota Intl",
-        "category": "civilian",
-        "point": DcsPoint(x=75884.859375, y=48589.876953),
-        "runways": [{"name": "9-27", "heading": 90}],
-        "parking_slots": 9,
-    },
-    {
-        "id": "saipan-intl",
-        "name": "Saipan Intl",
-        "category": "civilian",
-        "point": DcsPoint(x=180035.4375, y=101855.960938),
-        "runways": [{"name": "07-25", "heading": 70}],
-        "parking_slots": 19,
-    },
-    {
-        "id": "tinian-intl",
-        "name": "Tinian Intl",
-        "category": "civilian",
-        "point": DcsPoint(x=166859.859375, y=89956.625),
-        "runways": [{"name": "08-26", "heading": 80}],
-        "parking_slots": 4,
-    },
-    {
-        "id": "antonio-b-won-pat-intl",
-        "name": "Antonio B. Won Pat Intl",
-        "category": "civilian",
-        "point": DcsPoint(x=-23.656158, y=-77.940308),
-        "runways": [
-            {"name": "06R-24L", "heading": 60},
-            {"name": "06L-24R", "heading": 60},
-        ],
-        "parking_slots": 23,
-    },
-    {
-        "id": "olf-orote",
-        "name": "Olf Orote",
-        "category": "military",
-        "point": DcsPoint(x=-5023.305023, y=-16869.435119),
-        "runways": [{"name": "25-7", "heading": 250}],
-        "parking_slots": 4,
-    },
-    {
-        "id": "andersen-afb",
-        "name": "Andersen AFB",
-        "category": "military",
-        "point": DcsPoint(x=10574.989746, y=14548.833496),
-        "runways": [
-            {"name": "06L-24R", "heading": 60},
-            {"name": "06R-24L", "heading": 60},
-        ],
-        "parking_slots": 194,
-    },
-    {
-        "id": "pagan-airstrip",
-        "name": "Pagan Airstrip",
-        "category": "military",
-        "point": DcsPoint(x=512410.262497, y=107564.608564),
-        "runways": [{"name": "11-29", "heading": 110}],
-        "parking_slots": 3,
-    },
-    {
-        "id": "north-west-field",
-        "name": "North West Field",
-        "category": "military",
-        "point": DcsPoint(x=15909.476563, y=7619.561523),
-        "runways": [],
-        "parking_slots": 8,
-    },
-)
+
+def marianas_airbases_from_pydcs() -> tuple[dict[str, Any], ...]:
+    """Load Marianas airports from pydcs."""
+
+    return airbases_from_pydcs(MarianaIslands())
+
+
+MARIANAS_AIRBASES: tuple[dict[str, Any], ...] = marianas_airbases_from_pydcs()
 
 MARIANAS_LAND_POLYGONS: dict[str, MapPolygon] = {
     "Guam": dcs_polygon(
@@ -174,6 +111,7 @@ MARIANAS_THEATER = TheaterDefinition(
             id=airbase["id"],
             name=airbase["name"],
             position=airbase["point"],
+            dcs_airport_id=airbase["dcs_airport_id"],
         )
         for airbase in MARIANAS_AIRBASES
     ),
@@ -238,7 +176,7 @@ def marianas_map_payload() -> dict[str, Any]:
     return {
         "id": MARIANAS_THEATER.id,
         "name": MARIANAS_THEATER.name,
-        "source": "pydcs MarianaIslands terrain snapshot",
+        "source": "pydcs MarianaIslands terrain",
         "projection": "DCS world coordinates in meters, projected to WGS84 for UI",
         "bounds": bounds_payload(),
         "islands": [

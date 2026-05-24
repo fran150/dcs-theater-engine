@@ -79,9 +79,20 @@ def test_marianas_map_payload_is_served() -> None:
     assert payload["bounds"]["xMin"] == -300000
     assert payload["bounds"]["xMax"] == 1000000
     assert len(payload["bounds"]["outline"]) > 4
-    assert any(
-        airbase["name"] == "Andersen AFB" for airbase in payload["airbases"]
+    andersen = next(
+        airbase
+        for airbase in payload["airbases"]
+        if airbase["name"] == "Andersen AFB"
     )
+    assert andersen["id"] == "andersen-afb"
+    assert andersen["dcs_airport_id"] == 6
+    assert [runway["name"] for runway in andersen["runways"]] == [
+        "06L-24R",
+        "06R-24L",
+    ]
+    assert andersen["parking_slots"] == 194
+    assert len(andersen["parking"]) == 194
+    assert andersen["atc_radio"]["uhf_hz"] == 250100000
 
 
 def test_marianas_projection_derives_wgs84_from_dcs_points() -> None:

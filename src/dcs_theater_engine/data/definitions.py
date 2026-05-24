@@ -23,6 +23,7 @@ class AirbaseDefinition:
     id: str
     name: str
     position: DcsPoint
+    dcs_airport_id: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
