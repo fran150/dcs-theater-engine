@@ -8,14 +8,22 @@ from __future__ import annotations
 
 from typing import Any
 
+from dcs import ships as dcs_ships
 from dcs.terrain.marianaislands import MarianaIslands
 from dcs.terrain.marianaislands.projection import PARAMETERS as MARIANAS_PARAMETERS
 
 from dcs_theater_engine.data.coordinates import DcsPoint
-from dcs_theater_engine.data.definitions import AirbaseDefinition, TheaterDefinition
+from dcs_theater_engine.data.definitions import (
+    AirbaseDefinition,
+    CarrierGroupDefinition,
+    ShipDefinition,
+    ShipTypeDefinition,
+    TheaterDefinition,
+)
 from dcs_theater_engine.data.pydcs_adapter import (
     airbases_from_pydcs,
     projection_from_pydcs,
+    ship_type_from_pydcs,
 )
 
 MapPolygon = tuple[DcsPoint, ...]
@@ -36,6 +44,13 @@ def marianas_airbases_from_pydcs() -> tuple[dict[str, Any], ...]:
 
 
 MARIANAS_AIRBASES: tuple[dict[str, Any], ...] = marianas_airbases_from_pydcs()
+
+STENNIS_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.Stennis)
+TICONDEROGA_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.TICONDEROG)
+ARLEIGH_BURKE_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.USS_Arleigh_Burke_IIa)
+KUZNETSOV_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.KUZNECOW)
+PYOTR_VELIKIY_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.PIOTR)
+NEUSTRASHIMY_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.NEUSTRASH)
 
 MARIANAS_LAND_POLYGONS: dict[str, MapPolygon] = {
     "Guam": dcs_polygon(
@@ -103,6 +118,71 @@ MARIANAS_MAP_BOUNDS = {
     "yMax": 500000,
 }
 
+MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupDefinition, ...] = (
+    CarrierGroupDefinition(
+        id="us-carrier-group-southeast",
+        name="US Carrier Group Southeast",
+        country="USA",
+        coalition="blue",
+        position=DcsPoint(x=-160000, y=260000),
+        heading=315.0,
+        ships=(
+            ShipDefinition(
+                id="uss-john-c-stennis",
+                name="USS John C. Stennis",
+                ship_type=STENNIS_SHIP_TYPE,
+                position=DcsPoint(x=-160000, y=260000),
+                heading=315.0,
+            ),
+            ShipDefinition(
+                id="uss-ticonderoga-screen",
+                name="USS Ticonderoga Screen",
+                ship_type=TICONDEROGA_SHIP_TYPE,
+                position=DcsPoint(x=-156000, y=255000),
+                heading=315.0,
+            ),
+            ShipDefinition(
+                id="uss-arleigh-burke-screen",
+                name="USS Arleigh Burke Screen",
+                ship_type=ARLEIGH_BURKE_SHIP_TYPE,
+                position=DcsPoint(x=-164000, y=255000),
+                heading=315.0,
+            ),
+        ),
+    ),
+    CarrierGroupDefinition(
+        id="russian-carrier-group-northwest",
+        name="Russian Carrier Group Northwest",
+        country="Russia",
+        coalition="red",
+        position=DcsPoint(x=650000, y=-180000),
+        heading=135.0,
+        ships=(
+            ShipDefinition(
+                id="admiral-kuznetsov",
+                name="Admiral Kuznetsov",
+                ship_type=KUZNETSOV_SHIP_TYPE,
+                position=DcsPoint(x=650000, y=-180000),
+                heading=135.0,
+            ),
+            ShipDefinition(
+                id="pyotr-velikiy-screen",
+                name="Pyotr Velikiy Screen",
+                ship_type=PYOTR_VELIKIY_SHIP_TYPE,
+                position=DcsPoint(x=654000, y=-185000),
+                heading=135.0,
+            ),
+            ShipDefinition(
+                id="neustrashimy-screen",
+                name="Neustrashimy Screen",
+                ship_type=NEUSTRASHIMY_SHIP_TYPE,
+                position=DcsPoint(x=646000, y=-185000),
+                heading=135.0,
+            ),
+        ),
+    ),
+)
+
 MARIANAS_THEATER = TheaterDefinition(
     id="marianas",
     name="Mariana Islands",
@@ -115,6 +195,7 @@ MARIANAS_THEATER = TheaterDefinition(
         )
         for airbase in MARIANAS_AIRBASES
     ),
+    carrier_groups=MARIANAS_CARRIER_GROUPS,
     land_polygons=tuple(MARIANAS_LAND_POLYGONS.values()),
 )
 
@@ -140,6 +221,50 @@ def airbase_payload(airbase: dict[str, Any]) -> dict[str, Any]:
     payload["point"] = point_payload(point)
     payload.update(lat_lon_payload(point))
     return payload
+
+
+def ship_type_payload(ship_type: ShipTypeDefinition) -> dict[str, Any]:
+    """Return API ship type metadata."""
+
+    return {
+        "id": ship_type.id,
+        "display_name": ship_type.display_name,
+        "dcs_type_name": ship_type.dcs_type_name,
+        "plane_capacity": ship_type.plane_capacity,
+        "helicopter_capacity": ship_type.helicopter_capacity,
+        "parking_slots": ship_type.parking_slots,
+        "detection_range_m": ship_type.detection_range_m,
+        "threat_range_m": ship_type.threat_range_m,
+        "air_weapon_distance_m": ship_type.air_weapon_distance_m,
+    }
+
+
+def ship_payload(ship: ShipDefinition) -> dict[str, Any]:
+    """Return API ship placement data with pydcs type metadata."""
+
+    return {
+        "id": ship.id,
+        "name": ship.name,
+        "ship_type": ship_type_payload(ship.ship_type),
+        "point": point_payload(ship.position),
+        "heading": ship.heading,
+        **lat_lon_payload(ship.position),
+    }
+
+
+def carrier_group_payload(group: CarrierGroupDefinition) -> dict[str, Any]:
+    """Return API carrier group data with derived map coordinates."""
+
+    return {
+        "id": group.id,
+        "name": group.name,
+        "country": group.country,
+        "coalition": group.coalition,
+        "point": point_payload(group.position),
+        "heading": group.heading,
+        "ships": [ship_payload(ship) for ship in group.ships],
+        **lat_lon_payload(group.position),
+    }
 
 
 def bounds_payload() -> dict[str, Any]:
@@ -184,4 +309,7 @@ def marianas_map_payload() -> dict[str, Any]:
             for name, points in MARIANAS_LAND_POLYGONS.items()
         ],
         "airbases": [airbase_payload(airbase) for airbase in MARIANAS_AIRBASES],
+        "carrier_groups": [
+            carrier_group_payload(group) for group in MARIANAS_THEATER.carrier_groups
+        ],
     }

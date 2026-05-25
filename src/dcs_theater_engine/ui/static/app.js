@@ -3,7 +3,9 @@ const state = {
   runtime: null,
   leafletMap: null,
   airbaseMarkers: new Map(),
+  carrierGroupMarkers: new Map(),
   selectedAirbaseId: null,
+  selectedCarrierGroupId: null,
   runtimePollId: null,
 };
 
@@ -13,17 +15,22 @@ const RUNTIME_POLL_INTERVAL_MS = 2000;
 const elements = {
   theaterName: document.querySelector("#theaterName"),
   airbaseCount: document.querySelector("#airbaseCount"),
+  carrierGroupCount: document.querySelector("#carrierGroupCount"),
   islandCount: document.querySelector("#islandCount"),
   campaignClock: document.querySelector("#campaignClock"),
   timeScaleControls: document.querySelector("#timeScaleControls"),
   selectedName: document.querySelector("#selectedName"),
   selectedCoalition: document.querySelector("#selectedCoalition"),
   selectedType: document.querySelector("#selectedType"),
+  selectedRunwaysLabel: document.querySelector("#selectedRunwaysLabel"),
   selectedRunways: document.querySelector("#selectedRunways"),
+  selectedParkingLabel: document.querySelector("#selectedParkingLabel"),
   selectedParking: document.querySelector("#selectedParking"),
+  selectedDamageLabel: document.querySelector("#selectedDamageLabel"),
   selectedDamage: document.querySelector("#selectedDamage"),
   selectedPosition: document.querySelector("#selectedPosition"),
   airbaseList: document.querySelector("#airbaseList"),
+  carrierGroupList: document.querySelector("#carrierGroupList"),
   coordinateReadout: document.querySelector("#coordinateReadout"),
   zoomIn: document.querySelector("#zoomIn"),
   zoomOut: document.querySelector("#zoomOut"),
@@ -39,6 +46,10 @@ function clearNode(node) {
 
 function airbaseLatLng(airbase) {
   return [airbase.latitude, airbase.longitude];
+}
+
+function carrierGroupLatLng(group) {
+  return [group.latitude, group.longitude];
 }
 
 function mapBoundsLatLngs() {
@@ -69,6 +80,10 @@ function airbaseById(airbaseId) {
   return state.mapData.airbases.find((airbase) => airbase.id === airbaseId);
 }
 
+function carrierGroupById(groupId) {
+  return state.mapData.carrier_groups.find((group) => group.id === groupId);
+}
+
 function runtimeAirbaseByDefinitionId(definitionId) {
   return state.runtime?.airbases.find((airbase) => airbase.definition_id === definitionId);
 }
@@ -85,6 +100,22 @@ function formatDamage(value) {
     return "-";
   }
   return `${Math.round(value * 100)}%`;
+}
+
+function formatCarrierAirWing(group) {
+  const leadShipType = group.ships[0]?.ship_type;
+  if (!leadShipType) {
+    return "-";
+  }
+
+  return `${leadShipType.plane_capacity} aircraft / ${leadShipType.helicopter_capacity} helicopters`;
+}
+
+function carrierGroupShortName(group) {
+  return group.name
+    .replace("Carrier Group ", "")
+    .replace("Southeast", "SE")
+    .replace("Northwest", "NW");
 }
 
 function formatCampaignTime(value) {
@@ -109,6 +140,7 @@ function fitMap() {
   const latLngs = mapBoundsLatLngs();
   if (!latLngs.length) {
     latLngs.push(...state.mapData.airbases.map(airbaseLatLng));
+    latLngs.push(...state.mapData.carrier_groups.map(carrierGroupLatLng));
   }
 
   state.leafletMap.fitBounds(L.latLngBounds(latLngs), {
@@ -155,6 +187,39 @@ function createAirbaseMarker(airbase) {
   state.airbaseMarkers.set(airbase.id, marker);
 }
 
+function carrierGroupMarkerHtml(group) {
+  return `
+    <button class="carrier-marker ${group.coalition}" type="button" aria-label="${group.name}">
+      <span class="carrier-symbol" aria-hidden="true"></span>
+      <span class="marker-label">${carrierGroupShortName(group)}</span>
+    </button>
+  `;
+}
+
+function createCarrierGroupMarker(group) {
+  const icon = L.divIcon({
+    className: "carrier-div-icon",
+    html: carrierGroupMarkerHtml(group),
+    iconSize: [1, 1],
+    iconAnchor: [0, 0],
+  });
+
+  const marker = L.marker(carrierGroupLatLng(group), {
+    icon,
+    keyboard: true,
+    title: group.name,
+  }).addTo(state.leafletMap);
+
+  const leadShip = group.ships[0]?.ship_type.display_name ?? "Carrier";
+  marker.on("click", () => selectCarrierGroup(group.id, { pan: false }));
+  marker.bindTooltip(
+    `${group.name}<br>${leadShip}<br>${formatLatLon(group)}`,
+    { direction: "top", opacity: 0.94 },
+  );
+
+  state.carrierGroupMarkers.set(group.id, marker);
+}
+
 function createMapBoundsOverlay() {
   const latLngs = mapBoundsLatLngs();
   if (!latLngs.length) {
@@ -191,8 +256,29 @@ function renderAirbaseList() {
   });
 }
 
+function renderCarrierGroupList() {
+  clearNode(elements.carrierGroupList);
+
+  state.mapData.carrier_groups.forEach((group) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "carrier-row";
+    row.dataset.carrierGroupId = group.id;
+    row.setAttribute("aria-pressed", "false");
+    row.innerHTML = `
+      <span class="category-dot ${group.coalition}" aria-hidden="true"></span>
+      <strong>${group.name}</strong>
+      <span>${group.ships.length}</span>
+      <small>${formatLatLon(group)}</small>
+    `;
+    row.addEventListener("click", () => selectCarrierGroup(group.id, { pan: true }));
+    elements.carrierGroupList.appendChild(row);
+  });
+}
+
 function selectAirbase(airbaseId, options = { pan: false }) {
   state.selectedAirbaseId = airbaseId;
+  state.selectedCarrierGroupId = null;
   const airbase = airbaseById(airbaseId);
 
   state.airbaseMarkers.forEach((marker, markerAirbaseId) => {
@@ -201,17 +287,26 @@ function selectAirbase(airbaseId, options = { pan: false }) {
       ?.querySelector(".airbase-marker")
       ?.classList.toggle("is-selected", markerAirbaseId === airbaseId);
   });
+  state.carrierGroupMarkers.forEach((marker) => {
+    marker.getElement()?.querySelector(".carrier-marker")?.classList.remove("is-selected");
+  });
 
   document.querySelectorAll(".airbase-row").forEach((node) => {
     node.setAttribute("aria-pressed", String(node.dataset.airbaseId === airbaseId));
+  });
+  document.querySelectorAll(".carrier-row").forEach((node) => {
+    node.setAttribute("aria-pressed", "false");
   });
 
   if (!airbase) {
     elements.selectedName.textContent = "None";
     elements.selectedCoalition.textContent = "-";
     elements.selectedType.textContent = "-";
+    elements.selectedRunwaysLabel.textContent = "Runways";
     elements.selectedRunways.textContent = "-";
+    elements.selectedParkingLabel.textContent = "Parking";
     elements.selectedParking.textContent = "-";
+    elements.selectedDamageLabel.textContent = "Damage";
     elements.selectedDamage.textContent = "-";
     elements.selectedPosition.textContent = "-";
     return;
@@ -222,8 +317,11 @@ function selectAirbase(airbaseId, options = { pan: false }) {
   elements.selectedCoalition.textContent = formatCoalition(runtimeAirbase?.coalition);
   elements.selectedType.textContent =
     airbase.category.charAt(0).toUpperCase() + airbase.category.slice(1);
+  elements.selectedRunwaysLabel.textContent = "Runways";
   elements.selectedRunways.textContent = runwayText(airbase);
+  elements.selectedParkingLabel.textContent = "Parking";
   elements.selectedParking.textContent = `${airbase.parking_slots}`;
+  elements.selectedDamageLabel.textContent = "Damage";
   elements.selectedDamage.textContent = formatDamage(runtimeAirbase?.runway_damage);
   elements.selectedPosition.textContent = formatLatLon(airbase);
 
@@ -231,6 +329,62 @@ function selectAirbase(airbaseId, options = { pan: false }) {
     state.leafletMap.flyTo(airbaseLatLng(airbase), Math.max(state.leafletMap.getZoom(), 10), {
       duration: 0.45,
     });
+  }
+}
+
+function selectCarrierGroup(groupId, options = { pan: false }) {
+  state.selectedAirbaseId = null;
+  state.selectedCarrierGroupId = groupId;
+  const group = carrierGroupById(groupId);
+
+  state.airbaseMarkers.forEach((marker) => {
+    marker.getElement()?.querySelector(".airbase-marker")?.classList.remove("is-selected");
+  });
+  state.carrierGroupMarkers.forEach((marker, markerGroupId) => {
+    marker
+      .getElement()
+      ?.querySelector(".carrier-marker")
+      ?.classList.toggle("is-selected", markerGroupId === groupId);
+  });
+
+  document.querySelectorAll(".airbase-row").forEach((node) => {
+    node.setAttribute("aria-pressed", "false");
+  });
+  document.querySelectorAll(".carrier-row").forEach((node) => {
+    node.setAttribute("aria-pressed", String(node.dataset.carrierGroupId === groupId));
+  });
+
+  if (!group) {
+    elements.selectedName.textContent = "None";
+    elements.selectedCoalition.textContent = "-";
+    elements.selectedType.textContent = "-";
+    elements.selectedRunwaysLabel.textContent = "Runways";
+    elements.selectedRunways.textContent = "-";
+    elements.selectedParkingLabel.textContent = "Parking";
+    elements.selectedParking.textContent = "-";
+    elements.selectedDamageLabel.textContent = "Damage";
+    elements.selectedDamage.textContent = "-";
+    elements.selectedPosition.textContent = "-";
+    return;
+  }
+
+  elements.selectedName.textContent = group.name;
+  elements.selectedCoalition.textContent = formatCoalition(group.coalition);
+  elements.selectedType.textContent = `${group.country} carrier group`;
+  elements.selectedRunwaysLabel.textContent = "Lead";
+  elements.selectedRunways.textContent = group.ships[0]?.ship_type.display_name ?? "-";
+  elements.selectedParkingLabel.textContent = "Ships";
+  elements.selectedParking.textContent = `${group.ships.length}`;
+  elements.selectedDamageLabel.textContent = "Air Wing";
+  elements.selectedDamage.textContent = formatCarrierAirWing(group);
+  elements.selectedPosition.textContent = formatLatLon(group);
+
+  if (options.pan) {
+    state.leafletMap.flyTo(
+      carrierGroupLatLng(group),
+      Math.max(state.leafletMap.getZoom(), 8),
+      { duration: 0.45 },
+    );
   }
 }
 
@@ -289,6 +443,8 @@ function renderRuntime() {
 
   if (state.selectedAirbaseId) {
     selectAirbase(state.selectedAirbaseId);
+  } else if (state.selectedCarrierGroupId) {
+    selectCarrierGroup(state.selectedCarrierGroupId);
   }
 }
 
@@ -319,12 +475,15 @@ async function setTimeScale(timeScale) {
 function renderMap() {
   elements.theaterName.textContent = state.mapData.name;
   elements.airbaseCount.textContent = state.mapData.airbases.length;
+  elements.carrierGroupCount.textContent = state.mapData.carrier_groups.length;
   elements.islandCount.textContent = state.mapData.islands.length;
 
   initLeafletMap();
   createMapBoundsOverlay();
   state.mapData.airbases.forEach(createAirbaseMarker);
+  state.mapData.carrier_groups.forEach(createCarrierGroupMarker);
   renderAirbaseList();
+  renderCarrierGroupList();
   renderTimeScaleControls();
   fitMap();
   selectAirbase("andersen-afb");

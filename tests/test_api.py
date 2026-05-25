@@ -76,6 +76,7 @@ def test_marianas_map_payload_is_served() -> None:
     assert payload["id"] == "marianas"
     assert payload["name"] == "Mariana Islands"
     assert len(payload["airbases"]) == 8
+    assert len(payload["carrier_groups"]) == 2
     assert payload["bounds"]["xMin"] == -300000
     assert payload["bounds"]["xMax"] == 1000000
     assert len(payload["bounds"]["outline"]) > 4
@@ -93,6 +94,22 @@ def test_marianas_map_payload_is_served() -> None:
     assert andersen["parking_slots"] == 194
     assert len(andersen["parking"]) == 194
     assert andersen["atc_radio"]["uhf_hz"] == 250100000
+    us_group = next(
+        group
+        for group in payload["carrier_groups"]
+        if group["id"] == "us-carrier-group-southeast"
+    )
+    assert us_group["coalition"] == "blue"
+    assert us_group["point"] == {"x": -160000, "y": 260000}
+    assert us_group["ships"][0]["ship_type"]["dcs_type_name"] == "Stennis"
+    russian_group = next(
+        group
+        for group in payload["carrier_groups"]
+        if group["id"] == "russian-carrier-group-northwest"
+    )
+    assert russian_group["coalition"] == "red"
+    assert russian_group["point"] == {"x": 650000, "y": -180000}
+    assert russian_group["ships"][0]["ship_type"]["dcs_type_name"] == "KUZNECOW"
 
 
 def test_marianas_projection_derives_wgs84_from_dcs_points() -> None:

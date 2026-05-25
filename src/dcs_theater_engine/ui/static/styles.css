@@ -9,6 +9,8 @@
   --muted: #9fb0ad;
   --civilian: #f2c36b;
   --military: #f06f5a;
+  --blue: #65a7ff;
+  --red: #f06474;
   --focus: #88d5c5;
 }
 
@@ -101,7 +103,7 @@ button:focus-visible {
 
 .metric-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -188,12 +190,14 @@ button:focus-visible {
   margin-bottom: 10px;
 }
 
-.airbase-list {
+.airbase-list,
+.carrier-group-list {
   display: grid;
   gap: 8px;
 }
 
-.airbase-row {
+.airbase-row,
+.carrier-row {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -209,17 +213,22 @@ button:focus-visible {
 
 .airbase-row:hover,
 .airbase-row:focus-visible,
-.airbase-row[aria-pressed="true"] {
+.airbase-row[aria-pressed="true"],
+.carrier-row:hover,
+.carrier-row:focus-visible,
+.carrier-row[aria-pressed="true"] {
   border-color: var(--focus);
   background: rgba(136, 213, 197, 0.08);
 }
 
-.airbase-row strong {
+.airbase-row strong,
+.carrier-row strong {
   font-size: 0.94rem;
   line-height: 1.2;
 }
 
-.airbase-row small {
+.airbase-row small,
+.carrier-row small {
   color: var(--muted);
   grid-column: 2 / 4;
 }
@@ -237,6 +246,14 @@ button:focus-visible {
 
 .category-dot.military {
   background: var(--military);
+}
+
+.category-dot.blue {
+  background: var(--blue);
+}
+
+.category-dot.red {
+  background: var(--red);
 }
 
 .map-stage {
@@ -355,6 +372,74 @@ button:focus-visible {
   background: rgba(136, 213, 197, 0.24);
   border-color: var(--focus);
   box-shadow: 0 0 0 2px rgba(136, 213, 197, 0.45);
+}
+
+.carrier-div-icon {
+  background: transparent;
+  border: 0;
+}
+
+.carrier-marker {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  display: flex;
+  gap: 7px;
+  min-height: 30px;
+  min-width: max-content;
+  padding: 0;
+  transform: translate(-12px, -15px);
+}
+
+.carrier-marker:hover,
+.carrier-marker:focus-visible {
+  border: 0;
+}
+
+.carrier-symbol {
+  background: #f8fbfa;
+  border: 2px solid #081014;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.72),
+    0 0 12px rgba(8, 16, 20, 0.7);
+  display: block;
+  height: 14px;
+  transform: rotate(45deg);
+  width: 14px;
+}
+
+.carrier-marker.blue .carrier-symbol {
+  background: var(--blue);
+}
+
+.carrier-marker.red .carrier-symbol {
+  background: var(--red);
+}
+
+.carrier-marker .marker-label {
+  color: #f8fbfa;
+  display: none;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 -1px 2px rgba(0, 0, 0, 0.8),
+    1px 0 2px rgba(0, 0, 0, 0.85),
+    -1px 0 2px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+
+.carrier-marker:hover .marker-label,
+.carrier-marker:focus-visible .marker-label,
+.carrier-marker.is-selected .marker-label {
+  display: inline;
+}
+
+.carrier-marker.is-selected .carrier-symbol {
+  box-shadow:
+    0 0 0 2px rgba(136, 213, 197, 0.65),
+    0 0 16px rgba(136, 213, 197, 0.45);
 }
 
 .leaflet-tooltip {

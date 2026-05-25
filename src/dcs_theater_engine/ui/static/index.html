@@ -29,6 +29,10 @@
             <small>Airbases</small>
           </div>
           <div>
+            <span id="carrierGroupCount">0</span>
+            <small>Carriers</small>
+          </div>
+          <div>
             <span id="islandCount">0</span>
             <small>Islands</small>
           </div>
@@ -55,15 +59,15 @@
               <dd id="selectedType">-</dd>
             </div>
             <div>
-              <dt>Runways</dt>
+              <dt id="selectedRunwaysLabel">Runways</dt>
               <dd id="selectedRunways">-</dd>
             </div>
             <div>
-              <dt>Parking</dt>
+              <dt id="selectedParkingLabel">Parking</dt>
               <dd id="selectedParking">-</dd>
             </div>
             <div>
-              <dt>Damage</dt>
+              <dt id="selectedDamageLabel">Damage</dt>
               <dd id="selectedDamage">-</dd>
             </div>
             <div>
@@ -78,6 +82,13 @@
             <p class="eyebrow">Airfields</p>
           </div>
           <div id="airbaseList" class="airbase-list"></div>
+        </section>
+
+        <section>
+          <div class="section-heading">
+            <p class="eyebrow">Carrier Groups</p>
+          </div>
+          <div id="carrierGroupList" class="carrier-group-list"></div>
         </section>
       </aside>
 

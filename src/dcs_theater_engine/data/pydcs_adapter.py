@@ -6,8 +6,9 @@ import re
 from typing import Any
 
 from dcs_theater_engine.data.coordinates import DcsPoint, TransverseMercatorProjection
+from dcs_theater_engine.data.definitions import ShipTypeDefinition
 
-AIRBASE_ID_PATTERN = re.compile(r"[^a-z0-9]+")
+PYDCS_ID_PATTERN = re.compile(r"[^a-z0-9]+")
 
 
 def projection_from_pydcs(parameters: Any) -> TransverseMercatorProjection:
@@ -24,7 +25,13 @@ def projection_from_pydcs(parameters: Any) -> TransverseMercatorProjection:
 def airbase_id(name: str) -> str:
     """Create a campaign-friendly ID from a pydcs airport name."""
 
-    return AIRBASE_ID_PATTERN.sub("-", name.lower()).strip("-")
+    return PYDCS_ID_PATTERN.sub("-", name.lower()).strip("-")
+
+
+def ship_type_id(ship_type: Any) -> str:
+    """Create a campaign-friendly ID from a pydcs ship type."""
+
+    return PYDCS_ID_PATTERN.sub("-", ship_type.id.lower()).strip("-")
 
 
 def dcs_point_from_pydcs(point: Any) -> DcsPoint:
@@ -103,3 +110,19 @@ def airbases_from_pydcs(terrain: Any) -> tuple[dict[str, Any], ...]:
     """Return all pydcs terrain airports as local airbase payloads."""
 
     return tuple(airbase_from_pydcs(airport) for airport in terrain.airports.values())
+
+
+def ship_type_from_pydcs(ship_type: Any) -> ShipTypeDefinition:
+    """Return local ship metadata from a pydcs ship type."""
+
+    return ShipTypeDefinition(
+        id=ship_type_id(ship_type),
+        display_name=ship_type.name,
+        dcs_type_name=ship_type.id,
+        plane_capacity=getattr(ship_type, "plane_num", 0),
+        helicopter_capacity=getattr(ship_type, "helicopter_num", 0),
+        parking_slots=getattr(ship_type, "parking", 0),
+        detection_range_m=getattr(ship_type, "detection_range", 0),
+        threat_range_m=getattr(ship_type, "threat_range", 0),
+        air_weapon_distance_m=getattr(ship_type, "air_weapon_dist", 0),
+    )
