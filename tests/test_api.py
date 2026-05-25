@@ -5,7 +5,9 @@ import json
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 
+import dcs_theater_engine.api.app as app_module
 from dcs_theater_engine.api.app import create_app
 from dcs_theater_engine.data.coordinates import DcsPoint
 from dcs_theater_engine.data.marianas import MARIANAS_PROJECTION
@@ -132,6 +134,31 @@ def test_index_serves_map_ui() -> None:
     assert "/static/app.js" in body
     assert "leaflet@1.9.4" in body
     assert 'id="mapCanvas"' in body
+
+
+def test_campaign_runtime_lifespan_ticks_independently() -> None:
+    class RecordingRuntime:
+        def __init__(self) -> None:
+            self.ticks = 0
+
+        def tick(self) -> None:
+            self.ticks += 1
+
+    async def run_lifespan() -> int:
+        app = FastAPI()
+        runtime = RecordingRuntime()
+        app.state.campaign_runtime = runtime
+        original_interval = app_module.CAMPAIGN_RUNTIME_TICK_INTERVAL_SECONDS
+        app_module.CAMPAIGN_RUNTIME_TICK_INTERVAL_SECONDS = 0
+        try:
+            async with app_module.lifespan(app):
+                await asyncio.sleep(0)
+                await asyncio.sleep(0)
+        finally:
+            app_module.CAMPAIGN_RUNTIME_TICK_INTERVAL_SECONDS = original_interval
+        return runtime.ticks
+
+    assert asyncio.run(run_lifespan()) > 0
 
 
 def test_campaign_runtime_snapshot_is_served() -> None:

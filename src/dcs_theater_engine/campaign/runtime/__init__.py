@@ -5,6 +5,7 @@ from dcs_theater_engine.campaign.runtime.campaign import (
     DEFAULT_CAMPAIGN_STEP,
     CampaignRuntime,
 )
+from dcs_theater_engine.campaign.runtime.service import CampaignRuntimeService
 from dcs_theater_engine.campaign.runtime.snapshots import RuntimeSnapshot
 from dcs_theater_engine.campaign.runtime.systems import (
     AirbaseRepairSystem,
@@ -18,6 +19,7 @@ __all__ = [
     "ALLOWED_TIME_SCALES",
     "AirbaseRepairSystem",
     "CampaignRuntime",
+    "CampaignRuntimeService",
     "CampaignSystem",
     "DEFAULT_CAMPAIGN_STEP",
     "IntelligenceSystem",

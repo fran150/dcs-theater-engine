@@ -7,6 +7,13 @@
 - Keep comments practical and concise; avoid long formal explanations for obvious code.
 - Match the existing local style when adding or editing comments.
 
+## Public API Documentation
+
+- Add descriptive docstrings for public classes and dataclasses whose fields are part of the constructor or caller-facing API.
+- For dataclasses, include an `Attributes:` section that explains each constructor field in plain language.
+- When changing constructor fields, runtime behavior, or public methods, update the related docstring in the same change.
+- Prefer docstrings for caller-facing documentation and short inline comments for local implementation context.
+
 ## Campaign Runtime Design
 
 - Do not assume the campaign engine needs frame-rate or second-precision simulation.

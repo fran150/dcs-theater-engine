@@ -9,17 +9,23 @@ from fastapi import APIRouter, Depends
 
 from dcs_theater_engine.api.dependencies import get_campaign_runtime
 from dcs_theater_engine.api.schemas import TimeScaleRequest
-from dcs_theater_engine.campaign.runtime import ALLOWED_TIME_SCALES, CampaignRuntime
+from dcs_theater_engine.campaign.runtime import (
+    ALLOWED_TIME_SCALES,
+    CampaignRuntimeService,
+)
 
 # Group campaign endpoints under a shared API prefix and documentation tag.
 router = APIRouter(prefix="/api/campaign", tags=["campaign"])
 
-# Reuse the campaign runtime dependency without repeating FastAPI wiring.
-CampaignRuntimeDep = Annotated[CampaignRuntime, Depends(get_campaign_runtime)]
+# Reuse the campaign runtime service dependency without repeating FastAPI wiring.
+CampaignRuntimeServiceDep = Annotated[
+    CampaignRuntimeService,
+    Depends(get_campaign_runtime),
+]
 
 
 @router.get("/runtime")
-def campaign_runtime(runtime: CampaignRuntimeDep) -> dict[str, object]:
+def campaign_runtime(runtime: CampaignRuntimeServiceDep) -> dict[str, object]:
     # Return the latest serializable view of the running campaign.
     return asdict(runtime.snapshot())
 
@@ -27,7 +33,7 @@ def campaign_runtime(runtime: CampaignRuntimeDep) -> dict[str, object]:
 @router.post("/runtime/time-scale")
 def set_time_scale(
     payload: TimeScaleRequest,
-    runtime: CampaignRuntimeDep,
+    runtime: CampaignRuntimeServiceDep,
 ) -> dict[str, object]:
     # Let the runtime validate campaign rules; API handlers format any errors.
     runtime.set_time_scale(payload.time_scale)

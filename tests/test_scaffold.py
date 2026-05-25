@@ -101,6 +101,38 @@ def test_campaign_runtime_waits_for_full_campaign_step() -> None:
     assert state.current_time == datetime(2026, 5, 17, 18, 0, 10, tzinfo=UTC)
 
 
+def test_campaign_runtime_runs_systems_once_per_campaign_step() -> None:
+    current_real_time = datetime(2026, 5, 17, 12, 0, tzinfo=UTC)
+    update_deltas: list[timedelta] = []
+
+    def clock() -> datetime:
+        return current_real_time
+
+    class RecordingSystem:
+        name = "recording"
+
+        def update(self, state: CampaignState, delta: timedelta) -> None:
+            update_deltas.append(delta)
+
+    state = CampaignState(
+        name="Runtime Test",
+        theater_id="test-theater",
+        current_time=datetime(2026, 5, 17, 18, 0, tzinfo=UTC),
+    )
+    runtime = CampaignRuntime(
+        state,
+        systems=[RecordingSystem()],
+        clock=clock,
+        step_size=timedelta(seconds=10),
+    )
+
+    current_real_time += timedelta(seconds=25)
+
+    assert runtime.tick() == timedelta(seconds=20)
+    assert update_deltas == [timedelta(seconds=10), timedelta(seconds=10)]
+    assert state.current_time == datetime(2026, 5, 17, 18, 0, 20, tzinfo=UTC)
+
+
 def test_campaign_runtime_rejects_unsupported_time_scale() -> None:
     state = CampaignState(
         name="Runtime Test",
@@ -154,3 +186,22 @@ def test_campaign_runtime_snapshot_projects_public_state() -> None:
     assert payload["airbases"][0]["coalition"] == "blue"
     assert payload["squadrons"][0]["coalition"] == "red"
     assert payload["recent_events"][0]["event_type"] == "campaign_created"
+
+
+def test_campaign_runtime_snapshot_does_not_advance_time() -> None:
+    current_real_time = datetime(2026, 5, 17, 12, 0, tzinfo=UTC)
+
+    def clock() -> datetime:
+        return current_real_time
+
+    state = CampaignState(
+        name="Runtime Test",
+        theater_id="test-theater",
+        current_time=datetime(2026, 5, 17, 18, 0, tzinfo=UTC),
+    )
+    runtime = CampaignRuntime(state, systems=[], clock=clock)
+    current_real_time += timedelta(seconds=30)
+
+    runtime.snapshot()
+
+    assert state.current_time == datetime(2026, 5, 17, 18, 0, tzinfo=UTC)
