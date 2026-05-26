@@ -23,8 +23,9 @@ Authoritative campaign state and campaign-time behavior.
 
 This package owns mutable campaign data, campaign clock advancement, scenario
 initialization, and simulation systems that update campaign state over time. The
-campaign layer should not depend on FastAPI, browser UI code, or DCS mission
-file details.
+campaign layer stores dynamic entities in an ECS registry, while campaign-level
+resources such as current time and event history remain on `CampaignState`. It
+should not depend on FastAPI, browser UI code, or DCS mission file details.
 
 ### `src/dcs_theater_engine/commander`
 
@@ -40,7 +41,9 @@ Static definitions used to build and interpret campaigns.
 
 This includes theater facts, airbases, aircraft definitions, unit metadata,
 map geometry, and DCS type mappings. Data definitions describe reusable facts;
-they should not store mutable per-campaign state.
+they should not store mutable per-campaign state. Prefer pydcs-derived data for
+DCS ground truth such as airfields, parking, runways, aircraft/unit type names,
+ship metadata, radio data, and terrain projection details.
 
 ### `src/dcs_theater_engine/dcs`
 
@@ -99,6 +102,43 @@ Unit, integration, and API tests.
 Tests should cover campaign rules close to the campaign layer, API contracts
 close to the API layer, and DCS import/export behavior at the boundary where it
 is translated.
+
+## ECS State Model
+
+Campaign state uses `tcod-ecs` as the internal entity/component registry. The
+registry is the authoritative home for mutable campaign entities; ordinary
+fields on `CampaignState` are reserved for campaign-level resources such as the
+campaign name, theater ID, current campaign time, and event log.
+
+The ECS model should stay small and explicit:
+
+- Use typed dataclass components for caller-facing mutable campaign state.
+- Keep stable entity IDs in the registry. Components should store mutable facts,
+  not duplicate their entity identity.
+- Use ECS relationships for entity links such as a squadron's home airbase.
+- Add new components only when a real system needs them.
+- Keep runtime systems direct and readable: query components, mutate campaign
+  state, and record events where useful.
+
+The API and browser UI should not depend on ECS internals. Snapshot builders
+project ECS state into stable DTOs, so internal component structure can evolve
+without forcing frontend or API clients to track every internal refactor.
+
+## DCS Data Ownership
+
+pydcs is the preferred source for simulator-owned ground truth. The project may
+normalize pydcs objects into immutable local definitions, but mutable campaign
+state should store references to those definitions rather than copying static
+DCS facts into every entity.
+
+For example, an airbase entity should track campaign facts such as controlling
+coalition and runway damage. Static facts such as DCS airport ID, runways,
+parking slots, ATC radios, frequencies, and terrain coordinates belong in the
+data catalog derived from pydcs.
+
+The campaign layer should not store raw pydcs objects in ECS components or save
+files. Keep pydcs objects at data-loading and DCS import/export boundaries so
+campaign saves remain JSON-friendly, inspectable, and migration-ready.
 
 ## Dependency Direction
 

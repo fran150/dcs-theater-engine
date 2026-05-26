@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.115",
     "pyproj>=3.0",
     "pydcs==0.15.0",
+    "tcod-ecs>=5.5,<6",
     "uvicorn[standard]>=0.30",
 ]
 

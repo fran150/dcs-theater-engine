@@ -7,7 +7,6 @@ def summarize_campaign(state: CampaignState) -> str:
     """Return a compact human-readable campaign summary."""
 
     return (
-        f"{state.name}: {len(state.airbases)} airbases, "
-        f"{len(state.squadrons)} squadrons, {len(state.events)} events"
+        f"{state.name}: {len(state.airbase_items())} airbases, "
+        f"{len(state.squadron_items())} squadrons, {len(state.events)} events"
     )
-

@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 
@@ -57,22 +58,35 @@ def test_campaign_state_round_trips_through_json(tmp_path) -> None:
         current_time=datetime(2026, 5, 17, 12, 0, tzinfo=UTC),
     )
     airbase = AirbaseState(
-        id="airbase-1",
         name="Test Airbase",
         coalition=Coalition.BLUE,
         definition_id="test-airbase",
         runway_damage=0.25,
     )
-    state.airbases[airbase.id] = airbase
+    state.add_airbase("airbase-1", airbase)
+    state.add_squadron(
+        "squadron-1",
+        SquadronState(
+            name="Test Squadron",
+            coalition=Coalition.BLUE,
+            aircraft_type="F/A-18C",
+            available_aircraft=4,
+        ),
+        home_airbase_id="airbase-1",
+    )
     state.record_event(EventType.CAMPAIGN_CREATED)
 
     save_path = tmp_path / "campaign.json"
     save_campaign(state, save_path)
+    payload = json.loads(save_path.read_text(encoding="utf-8"))
     loaded = load_campaign(save_path)
 
+    assert payload["entities"]["airbase-1"]["airbase"]["runway_damage"] == 0.25
+    assert payload["entities"]["squadron-1"]["home_airbase_id"] == "airbase-1"
     assert loaded.name == state.name
     assert loaded.current_time == state.current_time
-    assert loaded.airbases["airbase-1"].runway_damage == 0.25
+    assert loaded.registry["airbase-1"].components[AirbaseState].runway_damage == 0.25
+    assert loaded.home_airbase_id(loaded.registry["squadron-1"]) == "airbase-1"
     assert loaded.events[0].event_type == EventType.CAMPAIGN_CREATED
 
 
@@ -185,23 +199,20 @@ def test_campaign_runtime_snapshot_projects_public_state() -> None:
         current_time=datetime(2026, 5, 17, 18, 0, tzinfo=UTC),
     )
     airbase = AirbaseState(
-        id="airbase-1",
         name="Test Airbase",
         coalition=Coalition.BLUE,
         definition_id="test-airbase",
         runway_damage=0.25,
     )
     squadron = SquadronState(
-        id="squadron-1",
         name="Test Squadron",
         coalition=Coalition.RED,
         aircraft_type="MiG-29A",
-        home_airbase_id=airbase.id,
         available_aircraft=8,
         damaged_aircraft=1,
     )
-    state.airbases[airbase.id] = airbase
-    state.squadrons[squadron.id] = squadron
+    state.add_airbase("airbase-1", airbase)
+    state.add_squadron("squadron-1", squadron, home_airbase_id="airbase-1")
     state.record_event(EventType.CAMPAIGN_CREATED)
     runtime = CampaignRuntime(state, systems=[], clock=clock)
 
@@ -209,6 +220,7 @@ def test_campaign_runtime_snapshot_projects_public_state() -> None:
 
     assert payload["airbases"][0]["coalition"] == "blue"
     assert payload["squadrons"][0]["coalition"] == "red"
+    assert payload["squadrons"][0]["home_airbase_id"] == "airbase-1"
     assert payload["recent_events"][0]["event_type"] == "campaign_created"
 
 

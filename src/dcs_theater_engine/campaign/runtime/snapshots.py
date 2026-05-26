@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from dcs_theater_engine.campaign.core import AirbaseState, SquadronState
+import tcod.ecs
+
+from dcs_theater_engine.campaign.core import (
+    AirbaseState,
+    CampaignState,
+    SquadronState,
+)
 from dcs_theater_engine.events import CampaignEvent
 
 if TYPE_CHECKING:
@@ -85,19 +91,25 @@ def build_runtime_snapshot(runtime: CampaignRuntime) -> RuntimeSnapshot:
         running=runtime.running,
         systems=[system.name for system in runtime.systems],
         # Keep entity projection here so runtime logic stays focused on time.
-        airbases=[airbase_snapshot(airbase) for airbase in state.airbases.values()],
+        airbases=[
+            airbase_snapshot(entity, airbase)
+            for entity, airbase in state.airbase_items()
+        ],
         squadrons=[
-            squadron_snapshot(squadron) for squadron in state.squadrons.values()
+            squadron_snapshot(state, entity, squadron)
+            for entity, squadron in state.squadron_items()
         ],
         recent_events=[event_snapshot(event) for event in state.events[-10:]],
     )
 
 
-def airbase_snapshot(airbase: AirbaseState) -> AirbaseSnapshot:
+def airbase_snapshot(
+    entity: tcod.ecs.Entity, airbase: AirbaseState
+) -> AirbaseSnapshot:
     """Build the public view of one airbase."""
 
     return AirbaseSnapshot(
-        id=airbase.id,
+        id=str(entity.uid),
         name=airbase.name,
         coalition=airbase.coalition.value,
         definition_id=airbase.definition_id,
@@ -105,15 +117,19 @@ def airbase_snapshot(airbase: AirbaseState) -> AirbaseSnapshot:
     )
 
 
-def squadron_snapshot(squadron: SquadronState) -> SquadronSnapshot:
+def squadron_snapshot(
+    runtime_state: CampaignState,
+    entity: tcod.ecs.Entity,
+    squadron: SquadronState,
+) -> SquadronSnapshot:
     """Build the public view of one squadron."""
 
     return SquadronSnapshot(
-        id=squadron.id,
+        id=str(entity.uid),
         name=squadron.name,
         coalition=squadron.coalition.value,
         aircraft_type=squadron.aircraft_type,
-        home_airbase_id=squadron.home_airbase_id,
+        home_airbase_id=runtime_state.home_airbase_id(entity),
         available_aircraft=squadron.available_aircraft,
         damaged_aircraft=squadron.damaged_aircraft,
     )

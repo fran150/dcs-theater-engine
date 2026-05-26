@@ -14,7 +14,12 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin, get_type_hints
 
-from dcs_theater_engine.campaign.core import CampaignState
+from dcs_theater_engine.campaign.core import (
+    AirbaseState,
+    CampaignState,
+    SquadronState,
+)
+from dcs_theater_engine.events import CampaignEvent
 
 PERSIST_KEY = "persist"
 JSON_NAME_KEY = "json_name"
@@ -41,11 +46,84 @@ def load_campaign(path: str | Path) -> CampaignState:
 
 
 def _campaign_to_dict(state: CampaignState) -> dict[str, Any]:
-    return _to_json_value(state)
+    return {
+        "name": state.name,
+        "theater_id": state.theater_id,
+        "current_time": _to_json_value(state.current_time),
+        "entities": _entities_to_dict(state),
+        "events": _to_json_value(state.events),
+    }
 
 
 def _campaign_from_dict(payload: dict[str, Any]) -> CampaignState:
-    return _from_json_value(payload, CampaignState)
+    if "entities" not in payload:
+        return _legacy_campaign_from_dict(payload)
+
+    state = CampaignState(
+        name=payload["name"],
+        theater_id=payload["theater_id"],
+        current_time=_from_json_value(payload["current_time"], datetime),
+        events=_from_json_value(payload.get("events", []), list[CampaignEvent]),
+    )
+    entities = payload["entities"]
+    for entity_id, entity_payload in entities.items():
+        if "airbase" in entity_payload:
+            state.add_airbase(
+                entity_id,
+                _from_json_value(entity_payload["airbase"], AirbaseState),
+            )
+
+    for entity_id, entity_payload in entities.items():
+        if "squadron" in entity_payload:
+            state.add_squadron(
+                entity_id,
+                _from_json_value(entity_payload["squadron"], SquadronState),
+                home_airbase_id=entity_payload["home_airbase_id"],
+            )
+
+    return state
+
+
+def _entities_to_dict(state: CampaignState) -> dict[str, Any]:
+    entities: dict[str, Any] = {}
+    for entity, airbase in state.airbase_items():
+        entities.setdefault(str(entity.uid), {})["airbase"] = _to_json_value(airbase)
+
+    for entity, squadron in state.squadron_items():
+        entity_payload = entities.setdefault(str(entity.uid), {})
+        entity_payload["squadron"] = _to_json_value(squadron)
+        entity_payload["home_airbase_id"] = state.home_airbase_id(entity)
+
+    return entities
+
+
+def _legacy_campaign_from_dict(payload: dict[str, Any]) -> CampaignState:
+    state = CampaignState(
+        name=payload["name"],
+        theater_id=payload["theater_id"],
+        current_time=_from_json_value(payload["current_time"], datetime),
+        events=_from_json_value(payload.get("events", []), list[CampaignEvent]),
+    )
+
+    for fallback_id, airbase_payload in payload.get("airbases", {}).items():
+        component_payload = dict(airbase_payload)
+        entity_id = str(component_payload.pop("id", fallback_id))
+        state.add_airbase(
+            entity_id,
+            _from_json_value(component_payload, AirbaseState),
+        )
+
+    for fallback_id, squadron_payload in payload.get("squadrons", {}).items():
+        component_payload = dict(squadron_payload)
+        entity_id = str(component_payload.pop("id", fallback_id))
+        home_airbase_id = component_payload.pop("home_airbase_id")
+        state.add_squadron(
+            entity_id,
+            _from_json_value(component_payload, SquadronState),
+            home_airbase_id=home_airbase_id,
+        )
+
+    return state
 
 
 def _to_json_value(value: Any, metadata: Any = None) -> Any:

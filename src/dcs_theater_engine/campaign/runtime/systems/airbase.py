@@ -20,5 +20,5 @@ class AirbaseRepairSystem:
             return
 
         repaired = self.repair_per_hour * (delta.total_seconds() / 3600)
-        for airbase in state.airbases.values():
+        for _, airbase in state.airbase_items():
             airbase.runway_damage = max(0.0, airbase.runway_damage - repaired)

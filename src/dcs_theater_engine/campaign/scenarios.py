@@ -31,28 +31,31 @@ def create_marianas_campaign() -> CampaignState:
             "north-west-field",
         } else Coalition.RED
         campaign_airbase = AirbaseState(
-            id=airbase.id,
             name=airbase.name,
             coalition=coalition,
             definition_id=airbase.id,
         )
-        state.airbases[campaign_airbase.id] = campaign_airbase
+        state.add_airbase(airbase.id, campaign_airbase)
 
-    state.squadrons["vfa-27"] = SquadronState(
-        id="vfa-27",
-        name="VFA-27 Royal Maces",
-        coalition=Coalition.BLUE,
-        aircraft_type="F/A-18C",
+    state.add_squadron(
+        "vfa-27",
+        SquadronState(
+            name="VFA-27 Royal Maces",
+            coalition=Coalition.BLUE,
+            aircraft_type="F/A-18C",
+            available_aircraft=12,
+        ),
         home_airbase_id="andersen-afb",
-        available_aircraft=12,
     )
-    state.squadrons["18th-aggressor"] = SquadronState(
-        id="18th-aggressor",
-        name="18th Aggressor Squadron",
-        coalition=Coalition.RED,
-        aircraft_type="MiG-29S",
+    state.add_squadron(
+        "18th-aggressor",
+        SquadronState(
+            name="18th Aggressor Squadron",
+            coalition=Coalition.RED,
+            aircraft_type="MiG-29S",
+            available_aircraft=8,
+        ),
         home_airbase_id="saipan-intl",
-        available_aircraft=8,
     )
     state.record_event(
         EventType.CAMPAIGN_CREATED,
