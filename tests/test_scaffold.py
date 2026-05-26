@@ -1,29 +1,53 @@
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from dcs_theater_engine.campaign import (
     CampaignRuntime,
-    CampaignSimulator,
     CampaignState,
 )
-from dcs_theater_engine.campaign.core import AirbaseState, Coalition, SquadronState
+from dcs_theater_engine.campaign.core import (
+    AirbaseState,
+    Coalition,
+    SquadronState,
+)
 from dcs_theater_engine.campaign.errors import InvalidTimeScaleError
 from dcs_theater_engine.events import EventType
 from dcs_theater_engine.persistence import load_campaign, save_campaign
+from dcs_theater_engine.persistence.json_store import _from_json_value, _to_json_value
 
 
-def test_campaign_simulator_advances_time_and_records_event() -> None:
-    state = CampaignState(
-        name="Smoke Test",
-        theater_id="test-theater",
-        current_time=datetime(2026, 5, 17, 12, 0, tzinfo=UTC),
+@dataclass(slots=True)
+class PersistenceMetadataExample:
+    visible: str
+    private_note: str = field(default="runtime-only", metadata={"persist": False})
+    renamed: int = field(default=0, metadata={"json_name": "renamed_value"})
+    tuple_values: tuple[str, ...] = field(
+        default=(),
+        metadata={"to_json": list, "from_json": tuple},
     )
-    simulator = CampaignSimulator(state)
 
-    simulator.advance(timedelta(minutes=10))
 
-    assert state.current_time == datetime(2026, 5, 17, 12, 10, tzinfo=UTC)
-    assert state.events[-1].event_type == EventType.TIME_ADVANCED
+def test_persistence_metadata_controls_field_projection() -> None:
+    example = PersistenceMetadataExample(
+        visible="saved",
+        private_note="do not write",
+        renamed=7,
+        tuple_values=("alpha", "bravo"),
+    )
+
+    payload = _to_json_value(example)
+    loaded = _from_json_value(payload, PersistenceMetadataExample)
+
+    assert payload == {
+        "visible": "saved",
+        "renamed_value": 7,
+        "tuple_values": ["alpha", "bravo"],
+    }
+    assert loaded == PersistenceMetadataExample(
+        visible="saved",
+        renamed=7,
+        tuple_values=("alpha", "bravo"),
+    )
 
 
 def test_campaign_state_round_trips_through_json(tmp_path) -> None:

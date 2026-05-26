@@ -44,7 +44,16 @@ class SquadronState:
 
 @dataclass(slots=True)
 class CampaignState:
-    """Authoritative mutable state for one campaign run."""
+    """Authoritative mutable state for one campaign run.
+
+    Attributes:
+        name: Display name for this campaign instance.
+        theater_id: Static theater definition used by the campaign.
+        current_time: Current campaign time.
+        airbases: Mutable airbase state keyed by campaign airbase ID.
+        squadrons: Mutable squadron state keyed by squadron ID.
+        events: Campaign event history.
+    """
 
     name: str
     theater_id: str
@@ -65,4 +74,3 @@ class CampaignState:
         )
         self.events.append(event)
         return event
-

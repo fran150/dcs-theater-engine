@@ -48,7 +48,19 @@ class EventSnapshot:
 
 @dataclass(slots=True)
 class RuntimeSnapshot:
-    """Serializable view of the campaign runtime."""
+    """Serializable view of the campaign runtime.
+
+    Attributes:
+        campaign_name: Display name for this campaign instance.
+        theater_id: Static theater definition used by the campaign.
+        campaign_time: Current campaign time as an ISO 8601 string.
+        time_scale: Campaign pacing multiplier.
+        running: Whether the campaign runtime is advancing.
+        systems: Runtime systems registered with the campaign.
+        airbases: Public airbase state.
+        squadrons: Public squadron state.
+        recent_events: Recent campaign event history.
+    """
 
     campaign_name: str
     theater_id: str
