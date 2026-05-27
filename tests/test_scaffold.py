@@ -6,7 +6,7 @@ from dcs_theater_engine.campaign import (
     CampaignRuntime,
     CampaignState,
 )
-from dcs_theater_engine.campaign.core import (
+from dcs_theater_engine.campaign.entities import (
     AirbaseState,
     Coalition,
     SquadronState,

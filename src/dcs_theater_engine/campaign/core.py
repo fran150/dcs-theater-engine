@@ -4,58 +4,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import StrEnum
-from typing import Final
 
 import tcod.ecs
 
+from dcs_theater_engine.campaign.entities import (
+    HOME_AIRBASE_RELATION,
+    AirbaseState,
+    Coalition,
+    SquadronState,
+)
 from dcs_theater_engine.events import CampaignEvent, EventType
 
-HOME_AIRBASE_RELATION: Final = "home_airbase"
-
-
-class Coalition(StrEnum):
-    """Campaign coalitions."""
-
-    BLUE = "blue"
-    RED = "red"
-    NEUTRAL = "neutral"
-
-
-@dataclass(slots=True)
-class AirbaseState:
-    """Mutable component for an airbase campaign entity.
-
-    Attributes:
-        name: Display name for the airbase.
-        coalition: Coalition currently controlling the airbase.
-        definition_id: Static airbase definition this entity represents.
-        runway_damage: Current runway damage from 0.0 to 1.0.
-    """
-
-    name: str
-    coalition: Coalition
-    definition_id: str
-    runway_damage: float = 0.0
-
-
-@dataclass(slots=True)
-class SquadronState:
-    """Mutable component for a squadron campaign entity.
-
-    Attributes:
-        name: Display name for the squadron.
-        coalition: Coalition this squadron belongs to.
-        aircraft_type: Static aircraft type ID used by this squadron.
-        available_aircraft: Flyable aircraft currently available.
-        damaged_aircraft: Aircraft awaiting repair or replacement.
-    """
-
-    name: str
-    coalition: Coalition
-    aircraft_type: str
-    available_aircraft: int
-    damaged_aircraft: int = 0
+__all__ = [
+    "AirbaseState",
+    "CampaignState",
+    "Coalition",
+    "HOME_AIRBASE_RELATION",
+    "SquadronState",
+]
 
 
 @dataclass(slots=True)

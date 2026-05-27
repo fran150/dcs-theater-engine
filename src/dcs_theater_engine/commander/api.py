@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from dcs_theater_engine.campaign.core import Coalition
+from dcs_theater_engine.campaign.entities import Coalition
 from dcs_theater_engine.intelligence.fog import IntelligencePicture
 
 
@@ -34,4 +34,3 @@ class CommanderContext:
 
     coalition: Coalition
     intelligence: IntelligencePicture
-

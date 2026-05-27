@@ -1,8 +1,8 @@
 """Campaign state and runtime."""
 
-from dcs_theater_engine.campaign.core import (
+from dcs_theater_engine.campaign.core import CampaignState
+from dcs_theater_engine.campaign.entities import (
     AirbaseState,
-    CampaignState,
     Coalition,
     SquadronState,
 )

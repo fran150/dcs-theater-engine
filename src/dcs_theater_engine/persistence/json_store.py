@@ -14,9 +14,9 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin, get_type_hints
 
-from dcs_theater_engine.campaign.core import (
+from dcs_theater_engine.campaign.core import CampaignState
+from dcs_theater_engine.campaign.entities import (
     AirbaseState,
-    CampaignState,
     SquadronState,
 )
 from dcs_theater_engine.events import CampaignEvent

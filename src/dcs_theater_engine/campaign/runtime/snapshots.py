@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import tcod.ecs
 
-from dcs_theater_engine.campaign.core import (
+from dcs_theater_engine.campaign.core import CampaignState
+from dcs_theater_engine.campaign.entities import (
     AirbaseState,
-    CampaignState,
     SquadronState,
 )
 from dcs_theater_engine.events import CampaignEvent

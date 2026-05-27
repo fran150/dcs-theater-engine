@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from dcs_theater_engine.campaign.core import (
+from dcs_theater_engine.campaign.core import CampaignState
+from dcs_theater_engine.campaign.entities import (
     AirbaseState,
-    CampaignState,
     Coalition,
     SquadronState,
 )

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from dcs_theater_engine.campaign.core import Coalition
+from dcs_theater_engine.campaign.entities import Coalition
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,4 +31,3 @@ class IntelligencePicture:
         """Store or replace a contact report."""
 
         self.contacts[report.entity_id] = report
-
