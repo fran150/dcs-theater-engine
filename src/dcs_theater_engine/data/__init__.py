@@ -1,19 +1,15 @@
-"""Static campaign and theater definitions."""
+"""Static campaign and theater data."""
 
 from dcs_theater_engine.data.definitions import (
-    AirbaseDefinition,
-    AircraftTypeDefinition,
-    CarrierGroupDefinition,
-    ShipDefinition,
-    ShipTypeDefinition,
-    TheaterDefinition,
+    AirbaseData,
+    CarrierGroupData,
+    ShipData,
+    TheaterData,
 )
 
 __all__ = [
-    "AircraftTypeDefinition",
-    "AirbaseDefinition",
-    "CarrierGroupDefinition",
-    "ShipDefinition",
-    "ShipTypeDefinition",
-    "TheaterDefinition",
+    "AirbaseData",
+    "CarrierGroupData",
+    "ShipData",
+    "TheaterData",
 ]

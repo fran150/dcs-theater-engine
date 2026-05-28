@@ -11,19 +11,19 @@ from typing import Any
 from dcs import ships as dcs_ships
 from dcs.terrain.marianaislands import MarianaIslands
 from dcs.terrain.marianaislands.projection import PARAMETERS as MARIANAS_PARAMETERS
+from dcs.unittype import ShipType
 
 from dcs_theater_engine.data.coordinates import DcsPoint
 from dcs_theater_engine.data.definitions import (
-    AirbaseDefinition,
-    CarrierGroupDefinition,
-    ShipDefinition,
-    ShipTypeDefinition,
-    TheaterDefinition,
+    AirbaseData,
+    CarrierGroupData,
+    ShipData,
+    TheaterData,
 )
 from dcs_theater_engine.data.pydcs_adapter import (
     airbases_from_pydcs,
     projection_from_pydcs,
-    ship_type_from_pydcs,
+    ship_type_id,
 )
 
 MapPolygon = tuple[DcsPoint, ...]
@@ -45,12 +45,12 @@ def marianas_airbases_from_pydcs() -> tuple[dict[str, Any], ...]:
 
 MARIANAS_AIRBASES: tuple[dict[str, Any], ...] = marianas_airbases_from_pydcs()
 
-STENNIS_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.Stennis)
-TICONDEROGA_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.TICONDEROG)
-ARLEIGH_BURKE_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.USS_Arleigh_Burke_IIa)
-KUZNETSOV_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.KUZNECOW)
-PYOTR_VELIKIY_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.PIOTR)
-NEUSTRASHIMY_SHIP_TYPE = ship_type_from_pydcs(dcs_ships.NEUSTRASH)
+STENNIS_SHIP_TYPE = dcs_ships.Stennis
+TICONDEROGA_SHIP_TYPE = dcs_ships.TICONDEROG
+ARLEIGH_BURKE_SHIP_TYPE = dcs_ships.USS_Arleigh_Burke_IIa
+KUZNETSOV_SHIP_TYPE = dcs_ships.KUZNECOW
+PYOTR_VELIKIY_SHIP_TYPE = dcs_ships.PIOTR
+NEUSTRASHIMY_SHIP_TYPE = dcs_ships.NEUSTRASH
 
 MARIANAS_LAND_POLYGONS: dict[str, MapPolygon] = {
     "Guam": dcs_polygon(
@@ -118,8 +118,8 @@ MARIANAS_MAP_BOUNDS = {
     "yMax": 500000,
 }
 
-MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupDefinition, ...] = (
-    CarrierGroupDefinition(
+MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupData, ...] = (
+    CarrierGroupData(
         id="us-carrier-group-southeast",
         name="US Carrier Group Southeast",
         country="USA",
@@ -127,21 +127,21 @@ MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupDefinition, ...] = (
         position=DcsPoint(x=-160000, y=260000),
         heading=315.0,
         ships=(
-            ShipDefinition(
+            ShipData(
                 id="uss-john-c-stennis",
                 name="USS John C. Stennis",
                 ship_type=STENNIS_SHIP_TYPE,
                 position=DcsPoint(x=-160000, y=260000),
                 heading=315.0,
             ),
-            ShipDefinition(
+            ShipData(
                 id="uss-ticonderoga-screen",
                 name="USS Ticonderoga Screen",
                 ship_type=TICONDEROGA_SHIP_TYPE,
                 position=DcsPoint(x=-156000, y=255000),
                 heading=315.0,
             ),
-            ShipDefinition(
+            ShipData(
                 id="uss-arleigh-burke-screen",
                 name="USS Arleigh Burke Screen",
                 ship_type=ARLEIGH_BURKE_SHIP_TYPE,
@@ -150,7 +150,7 @@ MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupDefinition, ...] = (
             ),
         ),
     ),
-    CarrierGroupDefinition(
+    CarrierGroupData(
         id="russian-carrier-group-northwest",
         name="Russian Carrier Group Northwest",
         country="Russia",
@@ -158,21 +158,21 @@ MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupDefinition, ...] = (
         position=DcsPoint(x=650000, y=-180000),
         heading=135.0,
         ships=(
-            ShipDefinition(
+            ShipData(
                 id="admiral-kuznetsov",
                 name="Admiral Kuznetsov",
                 ship_type=KUZNETSOV_SHIP_TYPE,
                 position=DcsPoint(x=650000, y=-180000),
                 heading=135.0,
             ),
-            ShipDefinition(
+            ShipData(
                 id="pyotr-velikiy-screen",
                 name="Pyotr Velikiy Screen",
                 ship_type=PYOTR_VELIKIY_SHIP_TYPE,
                 position=DcsPoint(x=654000, y=-185000),
                 heading=135.0,
             ),
-            ShipDefinition(
+            ShipData(
                 id="neustrashimy-screen",
                 name="Neustrashimy Screen",
                 ship_type=NEUSTRASHIMY_SHIP_TYPE,
@@ -183,11 +183,11 @@ MARIANAS_CARRIER_GROUPS: tuple[CarrierGroupDefinition, ...] = (
     ),
 )
 
-MARIANAS_THEATER = TheaterDefinition(
+MARIANAS_THEATER = TheaterData(
     id="marianas",
     name="Mariana Islands",
     airbases=tuple(
-        AirbaseDefinition(
+        AirbaseData(
             id=airbase["id"],
             name=airbase["name"],
             position=airbase["point"],
@@ -223,23 +223,23 @@ def airbase_payload(airbase: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def ship_type_payload(ship_type: ShipTypeDefinition) -> dict[str, Any]:
+def ship_type_payload(ship_type: type[ShipType]) -> dict[str, Any]:
     """Return API ship type metadata."""
 
     return {
-        "id": ship_type.id,
-        "display_name": ship_type.display_name,
-        "dcs_type_name": ship_type.dcs_type_name,
-        "plane_capacity": ship_type.plane_capacity,
-        "helicopter_capacity": ship_type.helicopter_capacity,
-        "parking_slots": ship_type.parking_slots,
-        "detection_range_m": ship_type.detection_range_m,
-        "threat_range_m": ship_type.threat_range_m,
-        "air_weapon_distance_m": ship_type.air_weapon_distance_m,
+        "id": ship_type_id(ship_type),
+        "display_name": ship_type.name,
+        "dcs_type_name": ship_type.id,
+        "plane_capacity": getattr(ship_type, "plane_num", 0),
+        "helicopter_capacity": getattr(ship_type, "helicopter_num", 0),
+        "parking_slots": getattr(ship_type, "parking", 0),
+        "detection_range_m": getattr(ship_type, "detection_range", 0),
+        "threat_range_m": getattr(ship_type, "threat_range", 0),
+        "air_weapon_distance_m": getattr(ship_type, "air_weapon_dist", 0),
     }
 
 
-def ship_payload(ship: ShipDefinition) -> dict[str, Any]:
+def ship_payload(ship: ShipData) -> dict[str, Any]:
     """Return API ship placement data with pydcs type metadata."""
 
     return {
@@ -252,7 +252,7 @@ def ship_payload(ship: ShipDefinition) -> dict[str, Any]:
     }
 
 
-def carrier_group_payload(group: CarrierGroupDefinition) -> dict[str, Any]:
+def carrier_group_payload(group: CarrierGroupData) -> dict[str, Any]:
     """Return API carrier group data with derived map coordinates."""
 
     return {
